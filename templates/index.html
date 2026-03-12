@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prediksi Banjir Pekon Parerejo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8fcff;
+    }
+    .prediction-card {
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .btn-container {
+      margin: 20px 0;
+    }
+    .manual-form {
+      display: none;
+    }
+    /* Use flex for top bar to avoid overlap */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1050;
+    }
+    @media (max-width: 576px) {
+      h1 {
+        font-size: 1.3rem;
+      }
+      .modal-dialog {
+        max-width: 95vw;
+        margin: 1.75rem auto;
+      }
+      .container {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+      }
+      .top-bar {
+        gap: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="container py-4 position-relative">
+
+  <!-- Top bar for README button, not fixed, so it won't overlap -->
+  <div class="top-bar">
+    <button class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#readmeModal">
+      📖 Petunjuk
+    </button>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10 col-12">
+      <h1 class="text-center mb-4">Prediksi Banjir Pekon Parerejo</h1>
+
+      <!-- Tombol Prediksi -->
+      <div class="text-center btn-container d-flex flex-wrap justify-content-center gap-2">
+        <button class="btn btn-primary" onclick="getPrediction()">Lihat Prediksi Default</button>
+        <button class="btn btn-success" onclick="showManual()">Prediksi Manual</button>
+      </div>
+
+      <!-- Form Manual -->
+      <div id="manualForm" class="manual-form">
+        <h4>Opsi Manual (Opsional)</h4>
+        <div class="mb-3">
+          <label class="form-label">Curah Hujan (mm):</label>
+          <input type="number" id="rainInput" class="form-control" placeholder="">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kelembapan (%):</label>
+          <input type="number" id="humidityInput" class="form-control" placeholder="">
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-success" onclick="getManualPrediction()">Prediksi Manual</button>
+          <a class="btn btn-outline-secondary" href="#" onclick="openOWM(); return false;">
+            Cek di OpenWeatherMap
+          </a>
+        </div>
+      </div>
+
+      <!-- Hasil Prediksi -->
+      <h3 class="mt-4">Hasil Prediksi:</h3>
+      <div id="result"></div>
+      <p id="tanggal" class="text-muted mt-2"></p>
+    </div>
+  </div>
+
+  <script>
+    const lat = -5.416;
+    const lon = 104.98;
+
+    function showManual() {
+      document.getElementById("manualForm").style.display = "block";
+    }
+
+    async function getPrediction() {
+      const res = await fetch(`/predict?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      renderPrediction(data);
+    }
+
+    async function getManualPrediction() {
+      const rain = document.getElementById("rainInput").value;
+      const humidity = document.getElementById("humidityInput").value;
+      const res = await fetch(`/predict?lat=${lat}&lon=${lon}&rain=${rain}&humidity=${humidity}`);
+      const data = await res.json();
+      renderPrediction(data);
+    }
+
+    function renderPrediction(data) {
+      const container = document.getElementById("result");
+      container.innerHTML = "";
+      const predictionCard = document.createElement("div");
+      predictionCard.className = "prediction-card";
+      predictionCard.innerHTML = `<h5>Prediksi: <span class="badge bg-info">${data.prediction}</span></h5>`;
+      container.appendChild(predictionCard);
+      if (data.parameters) {
+        Object.entries(data.parameters).forEach(([key, value]) => {
+          const card = document.createElement("div");
+          card.className = "prediction-card";
+          card.innerHTML = `<strong>${key}:</strong> ${value}`;
+          container.appendChild(card);
+        });
+      }
+      const now = new Date();
+      document.getElementById("tanggal").textContent = "Tanggal prediksi: " + now.toLocaleString();
+    }
+
+    function openOWM() {
+      const url = `https://openweathermap.org/city/1624917`;
+      window.open(url, "_blank");
+    }
+  </script>
+
+  <!-- Modal README -->
+  <div class="modal fade" id="readmeModal" tabindex="-1" aria-labelledby="readmeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="readmeLabel">README - Cara Menggunakan Aplikasi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h6>Deskripsi</h6>
+          <p>Aplikasi ini digunakan untuk memprediksi potensi banjir di Pekon Parerejo berdasarkan data cuaca.</p>
+          <h6>Cara Penggunaan</h6>
+          <ol>
+            <li>Klik <strong>"Lihat Prediksi Default"</strong> untuk menampilkan prediksi otomatis.</li>
+            <li>Gunakan <strong>"Prediksi Manual"</strong> bila ingin memasukkan data curah hujan dan kelembaban sendiri.</li>
+            <li>Pilih <strong>"Cek di OpenWeatherMap"</strong> untuk melihat peta cuaca secara langsung.</li>
+            <li>Hasil prediksi akan muncul di bagian bawah halaman.</li>
+          </ol>
+          <h6>Catatan</h6>
+          <ul>
+            <li>Data cuaca default diambil dari lokasi Pekon Parerejo.</li>
+            <li>Pastikan koneksi internet aktif untuk mengambil data cuaca terbaru.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS (for modal) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
